@@ -11,7 +11,8 @@ defmodule Yatzy.Score do
      8
   """
   def upper(n, ds) do
-    :undefined
+    grouped_ds = Enum.group_by(ds, %{}, fn x -> x end)
+    Enum.sum(grouped_ds[n])
   end
 
   @doc ~S"""
@@ -22,7 +23,7 @@ defmodule Yatzy.Score do
      14
   """
   def chance(ds) do
-    :undefined
+    Enum.sum(ds)
   end
 
   @doc ~S"""
@@ -34,8 +35,11 @@ defmodule Yatzy.Score do
      iex> Yatzy.Score.yatzy([4,4,4,4,4])
      50
   """
-  def yatzy(ds) do
-    :undefined
+  def yatzy([x, x, x, x, x]) do
+    50
+  end
+  def yatzy(_) do
+    0
   end
 
   @doc ~S"""
@@ -49,7 +53,11 @@ defmodule Yatzy.Score do
      15
   """
   def small_straight(ds) do
-    :undefined
+    if Enum.sort(ds) == [1,2,3,4,5] do
+      15
+    else
+      0
+    end
   end
 
   @doc ~S"""
@@ -63,7 +71,11 @@ defmodule Yatzy.Score do
      20
   """
   def large_straight(ds) do
-    :undefined
+    if Enum.sort(ds) == [2,3,4,5,6] do
+      20
+    else
+      0
+    end
   end
 
   @doc ~S"""
@@ -77,7 +89,33 @@ defmodule Yatzy.Score do
      20
   """
   def four_of_a_kind(ds) do
-    :undefined
+    n_of_a_kind(ds, 4)
+  end
+
+  defp n_of_a_kind(ds, n) do
+    ds
+    |> group_by_values
+    |> select_more_than(n)
+    |> List.flatten
+    |> List.first
+    |> multiply_by_n(n)
+  end
+
+  defp group_by_values(ds) do
+    ds
+    |> Enum.group_by(%{}, fn x -> x end)
+    |> Dict.values
+  end
+
+  defp select_more_than(ds, n) do
+    ds |> Enum.filter(fn x -> length(x) >= n end)
+  end
+
+  defp multiply_by_n(nil, _n) do
+    0
+  end
+  defp multiply_by_n(i, n) do
+    n * i
   end
 
   @doc ~S"""
@@ -91,7 +129,7 @@ defmodule Yatzy.Score do
      12
   """
   def three_of_a_kind(ds) do
-    :undefined
+    n_of_a_kind(ds, 3)
   end
 
   @doc ~S"""
@@ -103,9 +141,26 @@ defmodule Yatzy.Score do
      0
      iex> Yatzy.Score.one_pair([4,6,6,2,5])
      12
+     iex> Yatzy.Score.one_pair([4,4,6,6,5])
+     12
+     iex> Yatzy.Score.one_pair([4,6,6,5,5])
+     12
   """
   def one_pair(ds) do
-    :undefined
+    pairs = ds
+    |> pairs
+    |> Enum.map(fn list -> List.first(list) * 2 end)
+
+    case pairs do
+      [] -> 0
+      list -> Enum.max(list)
+    end
+  end
+
+  defp pairs(ds) do
+    ds
+    |> group_by_values
+    |> Enum.filter(fn list -> length(list) >= 2 end)
   end
 
 
@@ -116,11 +171,18 @@ defmodule Yatzy.Score do
   ## Examples
      iex> Yatzy.Score.two_pairs([2,3,3,3,3])
      0
+
      iex> Yatzy.Score.two_pairs([2,4,6,2,6])
      16
   """
   def two_pairs(ds) do
-    :undefined
+    pairs = ds |> pairs
+
+    case pairs do
+      [] -> 0
+      [_x] -> 0
+      [x, y] -> (List.first(x) + List.first(y)) * 2
+    end
   end
 
   @doc ~S"""
@@ -130,12 +192,27 @@ defmodule Yatzy.Score do
   ## Examples
      iex> Yatzy.Score.full_house([3,3,3,3,3])
      0
+
+     iex> Yatzy.Score.full_house([3,3,3,3,4])
+     0
+
      iex> Yatzy.Score.full_house([3,3,6,3,6])
      21
+
+     iex> Yatzy.Score.full_house([6,3,6,3,6])
+     24
   """
   def full_house(ds) do
-    :undefined
+    grouped = ds
+    |> group_by_values
+    |> Enum.sort
+    |> List.flatten
+
+    case grouped do
+      [x, x, x, x, x] -> 0
+      [x, x, x, y, y] -> x * 3 + y * 2
+      [x, x, y, y, y] -> x * 2 + y * 3
+      _ -> 0
+    end
   end
-
-
 end
